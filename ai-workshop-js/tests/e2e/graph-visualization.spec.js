@@ -114,9 +114,9 @@ test.describe('Graph Visualization', () => {
   });
 
   test('should show arrow markers on links', async ({ page }) => {
-    // Check that arrow marker is defined
+    // Check that arrow marker is defined in the DOM
     const arrowMarker = page.locator('marker#arrowhead');
-    await expect(arrowMarker).toBeVisible();
+    await expect(arrowMarker).toBeAttached();
     
     // Check that links use the arrow marker
     const links = page.locator('.link');

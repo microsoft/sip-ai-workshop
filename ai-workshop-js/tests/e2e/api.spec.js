@@ -134,7 +134,10 @@ test.describe('API Tests', () => {
     // Check that no files from node_modules are included
     data.nodes.forEach(node => {
       expect(node.directory).not.toContain('node_modules');
-      expect(node.directory).not.toMatch(/^\..*$/); // No hidden directories
+      // No hidden directories (but allow current directory ".")
+      if (node.directory !== '.') {
+        expect(node.directory).not.toMatch(/^\..*$/);
+      }
     });
   });
 

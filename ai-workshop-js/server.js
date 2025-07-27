@@ -11,6 +11,9 @@ app.use(express.static('public'));
 // AI Enhancement Hook: Add more file extensions here
 const FILE_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx', '.mjs'];
 
+// Common files without extensions that should be included
+const FILES_WITHOUT_EXTENSIONS = ['README', 'LICENSE', 'Dockerfile', 'Makefile', 'Gemfile'];
+
 // AI Enhancement Hook: Add more import patterns
 const IMPORT_PATTERNS = [
   /import\s+(?:{[^}]+}|\*\s+as\s+\w+|\w+)\s+from\s+['"]([^'"]+)['"]/g,
@@ -37,7 +40,7 @@ function scanDirectory(dirPath, baseDir) {
         }
       } else if (stat.isFile()) {
         const ext = path.extname(item);
-        if (FILE_EXTENSIONS.includes(ext)) {
+        if (FILE_EXTENSIONS.includes(ext) || FILES_WITHOUT_EXTENSIONS.includes(item)) {
           files.push(path.relative(baseDir, fullPath));
         }
       }

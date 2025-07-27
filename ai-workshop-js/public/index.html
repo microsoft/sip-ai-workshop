@@ -351,6 +351,9 @@
             console.log('[AI Observation] Mouse over node:', d.name);
             observer.logAction('hover', { file: d.id });
             
+            // Get file extension for the tooltip (BUG: assumes extension always exists)
+            const extension = d.name.split('.')[1].toUpperCase();
+            
             // Show tooltip
             const tooltip = d3.select('#tooltip');
             tooltip.transition().duration(200).style('opacity', .9);
@@ -358,7 +361,7 @@
                 <strong>${d.name}</strong><br/>
                 Path: ${d.id}<br/>
                 Directory: ${d.directory}<br/>
-                Type: ${d.extension}
+                Type: ${extension} file
             `)
             .style('left', (event.pageX + 10) + 'px')
             .style('top', (event.pageY - 28) + 'px');

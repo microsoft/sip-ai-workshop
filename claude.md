@@ -218,11 +218,12 @@ If the user expressed frustration or provided feedback:
 - Add meaningful variable and function names
 
 ### Git Workflow
-1. Create feature branches from main: `feature-<issue-number>-description`
-2. Make atomic commits with clear messages
-3. Always create PRs for code review
-4. Ensure CI/CD passes before merging
-5. Delete feature branches after merging
+1. **Always fetch latest before creating branches**: `git fetch origin && git reset --hard origin/main`
+2. Create feature branches from main: `feature-<issue-number>-description`
+3. Make atomic commits with clear messages
+4. Always create PRs for code review
+5. Ensure CI/CD passes before merging
+6. Keep feature branches (don't delete) for workshop instruction purposes
 
 ### Testing Strategy
 - Write tests for all new features

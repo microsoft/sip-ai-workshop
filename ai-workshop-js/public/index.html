@@ -321,6 +321,9 @@
                 .force('center', d3.forceCenter(width / 2, height / 2))
                 .force('collision', d3.forceCollide().radius(20));
             
+            // Expose simulation globally for testing
+            window.simulation = simulation;
+            
             simulation.on('tick', () => {
                 link
                     .attr('x1', d => d.source.x)

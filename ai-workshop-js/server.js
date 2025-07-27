@@ -101,6 +101,17 @@ function resolveImportPath(importPath, fromFile, baseDir) {
 function buildDependencyGraph(targetPath) {
   console.log(`[AI Observation] Building dependency graph for: ${targetPath}`);
   const baseDir = path.resolve(targetPath);
+  
+  // Check if the target path exists and is a directory
+  if (!fs.existsSync(baseDir)) {
+    throw new Error(`Path does not exist: ${targetPath}`);
+  }
+  
+  const stat = fs.statSync(baseDir);
+  if (!stat.isDirectory()) {
+    throw new Error(`Path is not a directory: ${targetPath}`);
+  }
+  
   const files = scanDirectory(baseDir, baseDir);
   
   // AI Enhancement Hook: Add file metadata here

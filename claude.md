@@ -236,26 +236,6 @@ If the user expressed frustration or provided feedback:
 - Include stack traces and reproduction steps
 - Assign issues to appropriate team members
 
-## Workshop-Specific Features
-
-### Bug Introduction (for learning)
-- Intentionally introduced bugs should be clearly marked
-- Document the learning objective for each bug
-- Provide hints without giving away the solution
-- Track participant progress through issues
-
-### Screenshot and Annotation
-- Use 's' key to capture screenshots during runtime
-- Annotate with specific bug descriptions
-- Automatically create issues from annotated screenshots
-- Link screenshots to relevant code sections
-
-### Automated Issue Creation
-- Errors automatically create GitHub issues
-- Issues include full stack traces
-- Relevant application state is captured
-- Issues are auto-assigned to Copilot for fixes
-
 ## Additional Resources
 
 - [GitHub CLI Documentation](https://cli.github.com/manual/)

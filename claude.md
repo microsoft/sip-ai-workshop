@@ -242,3 +242,7 @@ If the user expressed frustration or provided feedback:
 - [Playwright Documentation](https://playwright.dev/)
 - [D3.js Documentation](https://d3js.org/)
 - [Express.js Guide](https://expressjs.com/en/guide/routing.html)
+
+## Repository Management Notes
+
+- Don't delete branches for this repo - they will later be used for instruction.

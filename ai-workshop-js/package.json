@@ -1,0 +1,24 @@
+{
+  "name": "code-dependency-visualizer",
+  "version": "1.0.0",
+  "description": "An interactive tool for visualizing code dependencies in JavaScript/TypeScript projects",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "dependencies",
+    "visualization",
+    "d3",
+    "code-analysis"
+  ],
+  "author": "AI Workshop",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

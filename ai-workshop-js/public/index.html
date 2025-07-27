@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Dependency Visualizer</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: white;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .visualization {
+            flex: 1;
+            position: relative;
+        }
+        
+        #graph {
+            width: 100%;
+            height: 100%;
+            background: #fafafa;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        .stats {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .stat-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .stat-label {
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .options {
+            margin-top: 20px;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        
+        .checkbox-label input {
+            margin-right: 8px;
+        }
+        
+        .node {
+            cursor: pointer;
+        }
+        
+        .node circle {
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+        
+        .node text {
+            font-size: 12px;
+            pointer-events: none;
+        }
+        
+        .link {
+            fill: none;
+            stroke: #999;
+            stroke-opacity: 0.6;
+            stroke-width: 1px;
+        }
+        
+        .tooltip {
+            position: absolute;
+            text-align: left;
+            padding: 10px;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .highlighted {
+            opacity: 1 !important;
+        }
+        
+        .dimmed {
+            opacity: 0.2;
+        }
+        
+        /* AI Enhancement Hook: Add custom styles here */
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Dependency Visualizer</h1>
+            
+            <div class="controls">
+                <input type="text" id="pathInput" placeholder="Enter path to analyze (e.g., ./)" value="./">
+                <button id="analyzeBtn">Analyze Dependencies</button>
+            </div>
+            
+            <div class="stats" id="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Files:</span>
+                    <span id="fileCount">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Dependencies:</span>
+                    <span id="dependencyCount">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Directories:</span>
+                    <span id="directoryCount">-</span>
+                </div>
+            </div>
+            
+            <div class="options">
+                <h3>Options</h3>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="showLabels" checked>
+                    Show file labels
+                </label>
+                <!-- AI Enhancement Hook: Add more options here -->
+            </div>
+            
+            <!-- AI Enhancement Hook: Add search/filter controls here -->
+        </div>
+        
+        <div class="visualization">
+            <svg id="graph"></svg>
+            <div class="tooltip" id="tooltip"></div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { ObservationTracker } from './observation.js';
+        
+        // Initialize observation tracking
+        const observer = new ObservationTracker();
+        
+        // State
+        let currentGraph = null;
+        let simulation = null;
+        
+        // Color scale for directories
+        const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+        
+        // Initialize
+        document.getElementById('analyzeBtn').addEventListener('click', analyzePath);
+        document.getElementById('showLabels').addEventListener('change', updateLabels);
+        
+        // AI Enhancement Hook: Add keyboard shortcuts
+        document.getElementById('pathInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                analyzePath();
+            }
+        });
+        
+        async function analyzePath() {
+            const path = document.getElementById('pathInput').value.trim();
+            if (!path) return;
+            
+            console.log('[AI Observation] Analyzing path:', path);
+            observer.logAction('analyze', { path });
+            
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('[AI Observation] Received graph data:', data);
+                
+                currentGraph = data;
+                updateStats(data.stats);
+                renderGraph(data);
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        function updateStats(stats) {
+            document.getElementById('fileCount').textContent = stats.fileCount;
+            document.getElementById('dependencyCount').textContent = stats.dependencyCount;
+            document.getElementById('directoryCount').textContent = stats.directories;
+        }
+        
+        function renderGraph(data) {
+            console.log('[AI Observation] Rendering graph');
+            
+            const svg = d3.select('#graph');
+            svg.selectAll('*').remove();
+            
+            const width = svg.node().getBoundingClientRect().width;
+            const height = svg.node().getBoundingClientRect().height;
+            
+            // Create arrow markers for directed edges
+            svg.append('defs').append('marker')
+                .attr('id', 'arrowhead')
+                .attr('viewBox', '-0 -5 10 10')
+                .attr('refX', 20)
+                .attr('refY', 0)
+                .attr('orient', 'auto')
+                .attr('markerWidth', 10)
+                .attr('markerHeight', 10)
+                .append('svg:path')
+                .attr('d', 'M 0,-5 L 10,0 L 0,5')
+                .attr('fill', '#999');
+            
+            const g = svg.append('g');
+            
+            // Create links
+            const link = g.append('g')
+                .selectAll('line')
+                .data(data.links)
+                .enter().append('line')
+                .attr('class', 'link')
+                .attr('marker-end', 'url(#arrowhead)');
+            
+            // Create nodes
+            const node = g.append('g')
+                .selectAll('.node')
+                .data(data.nodes)
+                .enter().append('g')
+                .attr('class', 'node')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+            
+            // AI Enhancement Hook: Modify node appearance here
+            node.append('circle')
+                .attr('r', 8)
+                .attr('fill', d => colorScale(d.directory))
+                .on('mouseover', handleMouseOver)
+                .on('mouseout', handleMouseOut);
+            
+            node.append('text')
+                .attr('dx', 12)
+                .attr('dy', '.35em')
+                .text(d => d.name)
+                .style('display', document.getElementById('showLabels').checked ? 'block' : 'none');
+            
+            // Create force simulation
+            simulation = d3.forceSimulation(data.nodes)
+                .force('link', d3.forceLink(data.links)
+                    .id(d => d.id)
+                    .distance(100))
+                .force('charge', d3.forceManyBody()
+                    .strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(20));
+            
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+                
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+            
+            // Zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.1, 10])
+                .on('zoom', (event) => {
+                    g.attr('transform', event.transform);
+                    observer.logAction('zoom', { scale: event.transform.k });
+                });
+            
+            svg.call(zoom);
+            
+            // AI Enhancement Hook: Add graph analysis features here
+        }
+        
+        function handleMouseOver(event, d) {
+            console.log('[AI Observation] Mouse over node:', d.name);
+            observer.logAction('hover', { file: d.id });
+            
+            // Show tooltip
+            const tooltip = d3.select('#tooltip');
+            tooltip.transition().duration(200).style('opacity', .9);
+            tooltip.html(`
+                <strong>${d.name}</strong><br/>
+                Path: ${d.id}<br/>
+                Directory: ${d.directory}<br/>
+                Type: ${d.extension}
+            `)
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+            
+            // AI Enhancement Hook: Add node highlighting logic here
+            // Highlight connected nodes
+            if (currentGraph) {
+                const connectedNodes = new Set([d.id]);
+                
+                currentGraph.links.forEach(link => {
+                    if (link.source.id === d.id || link.source === d.id) {
+                        connectedNodes.add(link.target.id || link.target);
+                    }
+                    if (link.target.id === d.id || link.target === d.id) {
+                        connectedNodes.add(link.source.id || link.source);
+                    }
+                });
+                
+                d3.selectAll('.node').classed('dimmed', node => !connectedNodes.has(node.id));
+                d3.selectAll('.link').classed('dimmed', link => 
+                    !connectedNodes.has(link.source.id || link.source) || 
+                    !connectedNodes.has(link.target.id || link.target)
+                );
+            }
+        }
+        
+        function handleMouseOut() {
+            d3.select('#tooltip').transition().duration(500).style('opacity', 0);
+            d3.selectAll('.node').classed('dimmed', false);
+            d3.selectAll('.link').classed('dimmed', false);
+        }
+        
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+        
+        function updateLabels() {
+            const showLabels = document.getElementById('showLabels').checked;
+            d3.selectAll('.node text').style('display', showLabels ? 'block' : 'none');
+            observer.logAction('toggleLabels', { show: showLabels });
+        }
+        
+        // AI Enhancement Hook: Add more interactive features here
+        
+        // Auto-analyze on load
+        analyzePath();
+    </script>
+</body>
+</html>

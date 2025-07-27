@@ -1,0 +1,44 @@
+{
+    "name": "AI Workshop - Code Dependency Visualizer",
+    "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+    
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "18"
+        }
+    },
+    
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.vscode-json",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "github.copilot",
+                "github.copilot-chat",
+                "bradlc.vscode-tailwindcss",
+                "ms-vscode.vscode-typescript-next"
+            ],
+            "settings": {
+                "editor.formatOnSave": true,
+                "editor.defaultFormatter": "esbenp.prettier-vscode",
+                "editor.codeActionsOnSave": {
+                    "source.fixAll.eslint": true
+                }
+            }
+        }
+    },
+    
+    "forwardPorts": [3000],
+    "portsAttributes": {
+        "3000": {
+            "label": "Dependency Visualizer",
+            "onAutoForward": "openBrowser"
+        }
+    },
+    
+    "postCreateCommand": "npm install",
+    "postStartCommand": "echo 'Welcome to the AI Workshop! Run: npm start'",
+    
+    "remoteUser": "node"
+}

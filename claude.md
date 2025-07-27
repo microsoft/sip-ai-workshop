@@ -237,6 +237,25 @@ If the user expressed frustration or provided feedback:
 - Include stack traces and reproduction steps
 - Assign issues to appropriate team members
 
+## Reusable Agents
+
+The repository includes specialized agents in `.github/agents/` that can be invoked for specific tasks:
+
+### Available Agents
+- **test-solver**: Specialized in fixing failing tests, particularly Playwright E2E tests. Excels at debugging cross-browser issues, timing problems, and test stability.
+
+### Using Agents
+To invoke a reusable agent, use the following pattern:
+```
+/agent:test-solver
+
+Context: [Provide specific context about the problem]
+Requirements: [What needs to be achieved]
+```
+
+### Creating New Agents
+New specialized agents can be added to `.github/agents/` following the existing template structure. Each agent should have clear specialization, documented approaches, and success metrics.
+
 ## Additional Resources
 
 - [GitHub CLI Documentation](https://cli.github.com/manual/)

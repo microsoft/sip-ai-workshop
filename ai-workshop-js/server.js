@@ -1,6 +1,8 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
+const { execSync } = require('child_process');
 const ErrorHandler = require('./error-handler');
 
 // Initialize error handling
@@ -11,6 +13,19 @@ const errorHandler = new ErrorHandler({
 
 const app = express();
 const PORT = 3000;
+
+// Configure multer for file uploads
+const upload = multer({ 
+  dest: 'uploads/',
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
+
+// Ensure uploads directory exists
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
 
 app.use(express.json());
 app.use(express.static('public'));
@@ -226,6 +241,130 @@ app.post('/api/report-error', errorHandler.wrapFunction((req, res) => {
   
   res.json({ status: 'received', timestamp: new Date().toISOString() });
 }, 'clientErrorReport'));
+
+// API endpoint for screenshot annotation and issue creation
+app.post('/api/screenshot', upload.single('screenshot'), errorHandler.wrapFunction(async (req, res) => {
+  console.log('[AI Observation] Received screenshot submission');
+  
+  try {
+    const { annotations, context } = req.body;
+    const screenshotPath = req.file.path;
+    
+    // Parse JSON data
+    const annotationData = JSON.parse(annotations);
+    const contextData = JSON.parse(context);
+    
+    // Update error handler context
+    errorHandler.updateContext({
+      currentOperation: 'screenshotSubmission',
+      annotationCount: annotationData.length,
+      screenshotSize: req.file.size
+    });
+    
+    // Create issue title and body
+    const title = `[Visual Report] User annotation from ${contextData.url}`;
+    const body = formatScreenshotIssue(annotationData, contextData, screenshotPath);
+    
+    // Create GitHub issue with screenshot
+    const issueUrl = await createGitHubIssueWithScreenshot(title, body, screenshotPath);
+    
+    // Clean up uploaded file
+    fs.unlinkSync(screenshotPath);
+    
+    res.json({ issueUrl, status: 'success' });
+    
+  } catch (error) {
+    console.error('[Screenshot] Error creating issue:', error);
+    
+    // Clean up file if it exists
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({ error: error.message });
+  }
+}, 'screenshotSubmission'));
+
+function formatScreenshotIssue(annotations, context, screenshotPath) {
+  const annotationList = annotations.map((ann, index) => {
+    return `${index + 1}. ${ann.text || '(No text provided)'}`;
+  }).join('\\n');
+  
+  return `## 📸 Visual Bug Report / Enhancement Request
+
+**Submitted at:** ${context.timestamp}
+**Page URL:** ${context.url}
+**Viewport:** ${context.viewport.width}x${context.viewport.height}
+
+### User Annotations
+${annotationList || 'No annotations provided'}
+
+### Screenshot
+See attached screenshot with red markers indicating areas of interest.
+
+### Context
+This issue was created using the visual annotation feature. The user pressed 's' to capture the visualization and added annotations to highlight specific areas.
+
+---
+
+## 🤖 Instructions for Copilot
+
+Please review the attached screenshot and annotations to:
+
+1. **Analyze the Issue**: Understand what the user is reporting based on the visual markers
+2. **Determine the Type**: Is this a bug report or enhancement request?
+3. **Create a Test**: If it's a bug, write a test that reproduces the issue
+4. **Implement Solution**: Create the necessary changes to address the concern
+5. **Submit PR**: Create a pull request with your changes
+
+### Suggested Investigation Areas:
+- UI/UX issues highlighted in the screenshot
+- Visual glitches or rendering problems
+- Feature enhancements suggested by annotations
+- Accessibility improvements
+
+**Priority:** Medium - User-submitted visual feedback
+
+---
+
+*This issue was automatically generated from user screenshot annotation*`;
+}
+
+async function createGitHubIssueWithScreenshot(title, body, screenshotPath) {
+  try {
+    // First, create the issue without the image
+    const createCommand = `gh issue create --title "${title.replace(/"/g, '\\"')}" --body "${body.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
+    const result = execSync(createCommand, { encoding: 'utf-8' });
+    const issueUrl = result.trim();
+    
+    // Extract issue number from URL
+    const issueMatch = issueUrl.match(/\/issues\/(\d+)$/);
+    if (issueMatch) {
+      const issueNumber = issueMatch[1];
+      
+      // Add screenshot as a comment (GitHub CLI doesn't support direct image upload in issue creation)
+      const commentCommand = `gh issue comment ${issueNumber} --body "![Screenshot](attachment:screenshot.png)" --attach ${screenshotPath}`;
+      try {
+        execSync(commentCommand, { encoding: 'utf-8' });
+      } catch (commentError) {
+        console.log('[Screenshot] Could not attach image:', commentError.message);
+      }
+      
+      // Try to assign to Copilot
+      try {
+        execSync(`gh issue edit ${issueNumber} --add-assignee github-copilot`, { encoding: 'utf-8' });
+      } catch (assignError) {
+        console.log('[Screenshot] Could not assign to Copilot:', assignError.message);
+      }
+    }
+    
+    return issueUrl;
+    
+  } catch (error) {
+    console.error('[Screenshot] Failed to create GitHub issue:', error.message);
+    throw error;
+  }
+}
 
 // AI Enhancement Hook: Add more API endpoints here
 

@@ -86,6 +86,7 @@ public
 # Temporary folders
 tmp/
 temp/
+uploads/
 
 # Logs
 logs

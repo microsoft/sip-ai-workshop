@@ -30,7 +30,13 @@
 - Prompt reflection on task completion - Include instructions for claude to reflect on the completion of each task and update the memory file with the reflection. The reflection should include what was learned, what could be improved, and any other relevant insights. In particular if the user was frustrated, gave feedback, or had other issues indicated in the chat, the reflection should include recommended improvements to the Claude.md file to address those issues. 
 2. The file should be written in markdown format and should be easy to read and understand.
 3. The file should be placed in the root directory of the repository.
-
+4. Once the file is created, create a new branch called `feature-claude-md` and switch to it.
+5. Add the claude.md file to the git repo and commit it with the message "Add claude.md file with repository overview and best practices".
+6. Push the feature-claude-md branch to the remote repository.
+7. Create a new pull request from the feature-claude-md branch to the main branch.
+8. Add a detailed description to the pull request explaining the purpose of the claude.md file and how it will help in the workshop.
+9. Ensure the pull request passes the CI/CD pipeline
+10. Once the pull request is approved, merge it into the main branch.
 
 ---
 

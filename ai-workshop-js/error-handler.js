@@ -153,18 +153,18 @@ class ErrorHandler {
       const issueUrl = result.trim();
       console.log(`[ErrorHandler] Created issue: ${issueUrl}`);
       
-      // Try to assign to Copilot after creation
+      // Mention @copilot in a comment to engage it
       const issueMatch = issueUrl.match(/\/issues\/(\d+)$/);
       if (issueMatch) {
         const issueNumber = issueMatch[1];
         try {
-          execSync(`gh issue edit ${issueNumber} --add-assignee Copilot`, { 
+          execSync(`gh issue comment ${issueNumber} --body "@copilot please help resolve this automatically generated error"`, { 
             encoding: 'utf-8',
             stdio: 'pipe' 
           });
-          console.log(`[ErrorHandler] Assigned issue to Copilot`);
-        } catch (assignError) {
-          console.log(`[ErrorHandler] Could not assign to Copilot: ${assignError.message}`);
+          console.log(`[ErrorHandler] Mentioned @copilot in issue comment`);
+        } catch (commentError) {
+          console.log(`[ErrorHandler] Could not mention @copilot: ${commentError.message}`);
         }
       }
       

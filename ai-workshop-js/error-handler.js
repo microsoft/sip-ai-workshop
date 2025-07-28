@@ -153,18 +153,31 @@ class ErrorHandler {
       const issueUrl = result.trim();
       console.log(`[ErrorHandler] Created issue: ${issueUrl}`);
       
-      // Mention @copilot in a comment to engage it
+      // Note: Copilot assignment requires manual intervention via GitHub web UI
+      // The CLI and API don't support assigning Copilot bot
       const issueMatch = issueUrl.match(/\/issues\/(\d+)$/);
       if (issueMatch) {
         const issueNumber = issueMatch[1];
+        console.log(`[ErrorHandler] Note: Please manually assign Copilot to issue #${issueNumber} via GitHub web UI`);
+        
+        // Add a comment with instructions
         try {
-          execSync(`gh issue comment ${issueNumber} --body "@copilot please help resolve this automatically generated error"`, { 
+          const instructionComment = `This issue was automatically generated from a client-side error.
+
+To engage GitHub Copilot:
+1. Click "Assignees" in the right sidebar
+2. Search for and select "Copilot"
+3. Copilot will then analyze and potentially fix this issue
+
+Error details are in the issue description above.`;
+          
+          execSync(`gh issue comment ${issueNumber} --body "${this.escapeShellArg(instructionComment)}"`, { 
             encoding: 'utf-8',
             stdio: 'pipe' 
           });
-          console.log(`[ErrorHandler] Mentioned @copilot in issue comment`);
+          console.log(`[ErrorHandler] Added instruction comment to issue`);
         } catch (commentError) {
-          console.log(`[ErrorHandler] Could not mention @copilot: ${commentError.message}`);
+          console.log(`[ErrorHandler] Could not add comment: ${commentError.message}`);
         }
       }
       

@@ -15,14 +15,13 @@ mcp__github__assign_copilot_to_issue({
 });
 ```
 
-To enable:
-1. Install and configure the [GitHub MCP server](https://github.com/github/github-mcp-server)
-2. Set `USE_GITHUB_MCP=true` when running the error handler
-3. The error handler will automatically use the GitHub MCP server to assign Copilot
+The error handler automatically attempts to use GitHub MCP server by default:
 
-```bash
-USE_GITHUB_MCP=true npm start
-```
+1. Install and configure the [GitHub MCP server](https://github.com/github/github-mcp-server)
+2. The error handler will automatically detect and use it
+3. If MCP is not available, it saves the call to a file for later execution
+
+No configuration needed - it's the default behavior!
 
 ## Option 1: Automatic Assignment (Observed Behavior)
 

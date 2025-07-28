@@ -153,18 +153,18 @@ class ErrorHandler {
       const issueUrl = result.trim();
       console.log(`[ErrorHandler] Created issue: ${issueUrl}`);
       
-      // Try to assign to @copilot after creation
+      // Try to assign to copilot-swe-agent after creation
       const issueMatch = issueUrl.match(/\/issues\/(\d+)$/);
       if (issueMatch) {
         const issueNumber = issueMatch[1];
         try {
-          execSync(`gh issue edit ${issueNumber} --add-assignee @copilot`, { 
+          execSync(`gh issue edit ${issueNumber} --add-assignee copilot-swe-agent`, { 
             encoding: 'utf-8',
             stdio: 'pipe' 
           });
-          console.log(`[ErrorHandler] Assigned issue to @copilot`);
+          console.log(`[ErrorHandler] Assigned issue to copilot-swe-agent`);
         } catch (assignError) {
-          console.log(`[ErrorHandler] Could not assign to @copilot: ${assignError.message}`);
+          console.log(`[ErrorHandler] Could not assign to copilot-swe-agent: ${assignError.message}`);
         }
       }
       
@@ -263,7 +263,7 @@ ${JSON.stringify(environment, null, 2)}
 
 ---
 
-## 🤖 Instructions for @copilot
+## 🤖 Instructions for copilot-swe-agent
 
 Please help resolve this automatically generated error report by following these steps:
 

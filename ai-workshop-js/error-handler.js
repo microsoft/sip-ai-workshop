@@ -159,33 +159,54 @@ class ErrorHandler {
         const issueNumber = issueMatch[1];
         console.log(`[ErrorHandler] Created issue #${issueNumber}`);
         
-        // Generate MCP commands for Copilot assignment
-        if (process.env.GENERATE_MCP_COMMANDS === 'true') {
-          const mcpCommands = `
-# MCP Commands to assign Copilot to issue #${issueNumber}
-
-1. mcp__playwright__browser_navigate({ url: "${issueUrl}" })
-2. Wait for page load (3 seconds)
-3. mcp__playwright__browser_click({ element: "Assignees", ref: "button[aria-label='Select assignees']" })
-4. Wait for dropdown (1 second)
-5. mcp__playwright__browser_type({ element: "Search", ref: "input[placeholder*='Search']", text: "Copilot" })
-6. Wait for search results (1.5 seconds)
-7. mcp__playwright__browser_click({ element: "Copilot", ref: "div[role='option']:has-text('Copilot')" })
-8. mcp__playwright__browser_click({ element: "Body", ref: "body" })
+        // Use GitHub MCP server if available
+        if (process.env.USE_GITHUB_MCP === 'true') {
+          try {
+            const GitHubMCPAssigner = require('./github-mcp-assign');
+            const assigner = new GitHubMCPAssigner();
+            
+            // Get repo info from the assigner
+            const mcpCall = `
+// GitHub MCP Server call to assign Copilot
+mcp__github__assign_copilot_to_issue({
+  owner: "${assigner.owner}",
+  repo: "${assigner.repo}",
+  issueNumber: ${issueNumber}
+});
 `;
-          
-          const mcpFile = `mcp-assign-${issueNumber}.txt`;
-          fs.writeFileSync(mcpFile, mcpCommands);
-          console.log(`[ErrorHandler] MCP commands saved to ${mcpFile}`);
+            
+            console.log(`[ErrorHandler] GitHub MCP call generated:`);
+            console.log(mcpCall);
+            
+            // Save MCP call for execution
+            const mcpFile = `github-mcp-assign-${issueNumber}.js`;
+            fs.writeFileSync(mcpFile, mcpCall);
+            console.log(`[ErrorHandler] GitHub MCP call saved to ${mcpFile}`);
+            
+            // Try to execute if MCP is available
+            assigner.assignCopilot(issueNumber)
+              .then(result => {
+                if (result.success) {
+                  console.log(`[ErrorHandler] Successfully assigned Copilot via GitHub MCP`);
+                } else {
+                  console.log(`[ErrorHandler] GitHub MCP not available - execute ${mcpFile} in MCP environment`);
+                }
+              })
+              .catch(err => {
+                console.log(`[ErrorHandler] GitHub MCP error: ${err.message}`);
+              });
+              
+          } catch (err) {
+            console.log(`[ErrorHandler] GitHub MCP setup error: ${err.message}`);
+          }
         }
         
-        // Attempt web-based assignment if enabled
-        if (process.env.ENABLE_COPILOT_ASSIGNMENT === 'true') {
+        // Fallback to web automation if enabled
+        else if (process.env.ENABLE_COPILOT_ASSIGNMENT === 'true') {
           try {
             console.log(`[ErrorHandler] Attempting to assign Copilot via web automation...`);
             const { assignCopilotToIssue } = require('./assign-copilot-web');
             
-            // Run assignment in background to not block
             assignCopilotToIssue(issueNumber)
               .then(result => {
                 if (result.success) {
@@ -202,7 +223,7 @@ class ErrorHandler {
             console.log(`[ErrorHandler] Web automation not available: ${err.message}`);
           }
         } else {
-          console.log(`[ErrorHandler] Copilot assignment requires manual action or MCP automation`);
+          console.log(`[ErrorHandler] Copilot assignment available via GitHub MCP (set USE_GITHUB_MCP=true)`);
         }
       }
       

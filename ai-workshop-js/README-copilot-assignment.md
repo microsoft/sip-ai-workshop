@@ -1,6 +1,28 @@
 # Copilot Assignment for Auto-Generated Issues
 
-Due to GitHub API limitations, Copilot cannot be assigned to issues via the CLI or REST API. However, we've implemented several workarounds:
+Due to GitHub API limitations, Copilot cannot be assigned to issues via the CLI or REST API. However, we've implemented several solutions:
+
+## Option 1: GitHub MCP Server (Recommended)
+
+The GitHub MCP server provides a direct `assign_copilot_to_issue` tool:
+
+```javascript
+// Using GitHub MCP server
+mcp__github__assign_copilot_to_issue({
+  owner: "rysweet",
+  repo: "ai-sip-workshop",
+  issueNumber: 17
+});
+```
+
+To enable:
+1. Install and configure the [GitHub MCP server](https://github.com/github/github-mcp-server)
+2. Set `USE_GITHUB_MCP=true` when running the error handler
+3. The error handler will automatically use the GitHub MCP server to assign Copilot
+
+```bash
+USE_GITHUB_MCP=true npm start
+```
 
 ## Option 1: Automatic Assignment (Observed Behavior)
 

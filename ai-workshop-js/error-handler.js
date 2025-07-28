@@ -153,31 +153,36 @@ class ErrorHandler {
       const issueUrl = result.trim();
       console.log(`[ErrorHandler] Created issue: ${issueUrl}`);
       
-      // Note: Copilot assignment requires manual intervention via GitHub web UI
-      // The CLI and API don't support assigning Copilot bot
+      // Try to assign Copilot using web automation
       const issueMatch = issueUrl.match(/\/issues\/(\d+)$/);
       if (issueMatch) {
         const issueNumber = issueMatch[1];
-        console.log(`[ErrorHandler] Note: Please manually assign Copilot to issue #${issueNumber} via GitHub web UI`);
+        console.log(`[ErrorHandler] Created issue #${issueNumber}`);
         
-        // Add a comment with instructions
-        try {
-          const instructionComment = `This issue was automatically generated from a client-side error.
-
-To engage GitHub Copilot:
-1. Click "Assignees" in the right sidebar
-2. Search for and select "Copilot"
-3. Copilot will then analyze and potentially fix this issue
-
-Error details are in the issue description above.`;
-          
-          execSync(`gh issue comment ${issueNumber} --body "${this.escapeShellArg(instructionComment)}"`, { 
-            encoding: 'utf-8',
-            stdio: 'pipe' 
-          });
-          console.log(`[ErrorHandler] Added instruction comment to issue`);
-        } catch (commentError) {
-          console.log(`[ErrorHandler] Could not add comment: ${commentError.message}`);
+        // Attempt web-based assignment if enabled
+        if (process.env.ENABLE_COPILOT_ASSIGNMENT === 'true') {
+          try {
+            console.log(`[ErrorHandler] Attempting to assign Copilot via web automation...`);
+            const { assignCopilotToIssue } = require('./assign-copilot-web');
+            
+            // Run assignment in background to not block
+            assignCopilotToIssue(issueNumber)
+              .then(result => {
+                if (result.success) {
+                  console.log(`[ErrorHandler] Successfully assigned Copilot to issue #${issueNumber}`);
+                } else {
+                  console.log(`[ErrorHandler] Could not assign Copilot: ${result.error}`);
+                }
+              })
+              .catch(err => {
+                console.log(`[ErrorHandler] Assignment error: ${err.message}`);
+              });
+              
+          } catch (err) {
+            console.log(`[ErrorHandler] Web automation not available: ${err.message}`);
+          }
+        } else {
+          console.log(`[ErrorHandler] Copilot assignment disabled (set ENABLE_COPILOT_ASSIGNMENT=true to enable)`);
         }
       }
       

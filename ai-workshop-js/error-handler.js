@@ -153,11 +153,31 @@ class ErrorHandler {
       const issueUrl = result.trim();
       console.log(`[ErrorHandler] Created issue: ${issueUrl}`);
       
-      // Try to assign Copilot using web automation
+      // Extract issue number for Copilot assignment
       const issueMatch = issueUrl.match(/\/issues\/(\d+)$/);
       if (issueMatch) {
         const issueNumber = issueMatch[1];
         console.log(`[ErrorHandler] Created issue #${issueNumber}`);
+        
+        // Generate MCP commands for Copilot assignment
+        if (process.env.GENERATE_MCP_COMMANDS === 'true') {
+          const mcpCommands = `
+# MCP Commands to assign Copilot to issue #${issueNumber}
+
+1. mcp__playwright__browser_navigate({ url: "${issueUrl}" })
+2. Wait for page load (3 seconds)
+3. mcp__playwright__browser_click({ element: "Assignees", ref: "button[aria-label='Select assignees']" })
+4. Wait for dropdown (1 second)
+5. mcp__playwright__browser_type({ element: "Search", ref: "input[placeholder*='Search']", text: "Copilot" })
+6. Wait for search results (1.5 seconds)
+7. mcp__playwright__browser_click({ element: "Copilot", ref: "div[role='option']:has-text('Copilot')" })
+8. mcp__playwright__browser_click({ element: "Body", ref: "body" })
+`;
+          
+          const mcpFile = `mcp-assign-${issueNumber}.txt`;
+          fs.writeFileSync(mcpFile, mcpCommands);
+          console.log(`[ErrorHandler] MCP commands saved to ${mcpFile}`);
+        }
         
         // Attempt web-based assignment if enabled
         if (process.env.ENABLE_COPILOT_ASSIGNMENT === 'true') {
@@ -182,7 +202,7 @@ class ErrorHandler {
             console.log(`[ErrorHandler] Web automation not available: ${err.message}`);
           }
         } else {
-          console.log(`[ErrorHandler] Copilot assignment disabled (set ENABLE_COPILOT_ASSIGNMENT=true to enable)`);
+          console.log(`[ErrorHandler] Copilot assignment requires manual action or MCP automation`);
         }
       }
       

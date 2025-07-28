@@ -72,7 +72,10 @@ class ErrorHandler {
       
       // Rate limiting: don't create issues for the same error too frequently
       if (this.isRateLimited(errorKey)) {
+        const lastReported = this.recentIssues.get(errorKey);
+        const timeRemaining = Math.ceil((this.rateLimitMinutes * 60 * 1000 - (Date.now() - lastReported)) / 1000);
         console.log(`[ErrorHandler] Rate limited - skipping issue creation for: ${errorKey}`);
+        console.log(`[ErrorHandler] Time remaining: ${timeRemaining} seconds`);
         return;
       }
 
@@ -138,69 +141,129 @@ class ErrorHandler {
     const body = this.formatIssueBody(errorReport);
     
     try {
-      // Create the issue using GitHub CLI
-      const command = `gh issue create --title "${this.escapeShellArg(title)}" --body "${this.escapeShellArg(body)}"`;
-      const result = execSync(command, { encoding: 'utf-8' });
+      // Create temporary markdown file for issue body
+      const tempFile = path.join(process.cwd(), `issue-${Date.now()}.md`);
+      fs.writeFileSync(tempFile, body);
+      
+      // Create the issue using GitHub CLI with markdown file
+      // First try without assignee, then try to assign
+      const createCommand = `gh issue create --title "${this.escapeShellArg(title)}" --body-file "${tempFile}"`;
+      const result = execSync(createCommand, { encoding: 'utf-8' });
       
       const issueUrl = result.trim();
       console.log(`[ErrorHandler] Created issue: ${issueUrl}`);
       
-      // Extract issue number from URL
-      const issueMatch = issueUrl.match(/\\/issues\\/(\d+)$/);
+      // Try to assign to @copilot after creation
+      const issueMatch = issueUrl.match(/\/issues\/(\d+)$/);
       if (issueMatch) {
         const issueNumber = issueMatch[1];
-        
-        // Assign to Copilot (if available) - this might fail if no Copilot user exists
         try {
-          execSync(`gh issue edit ${issueNumber} --add-assignee github-copilot`, { encoding: 'utf-8' });
+          execSync(`gh issue edit ${issueNumber} --add-assignee @copilot`, { 
+            encoding: 'utf-8',
+            stdio: 'pipe' 
+          });
+          console.log(`[ErrorHandler] Assigned issue to @copilot`);
         } catch (assignError) {
-          console.log(`[ErrorHandler] Could not assign to Copilot: ${assignError.message}`);
+          console.log(`[ErrorHandler] Could not assign to @copilot: ${assignError.message}`);
         }
       }
+      
+      // Clean up temp file
+      fs.unlinkSync(tempFile);
       
       return issueUrl;
       
     } catch (error) {
       console.error('[ErrorHandler] Failed to create GitHub issue:', error.message);
+      
+      // Clean up temp file if it exists
+      const tempFiles = fs.readdirSync(process.cwd()).filter(f => f.startsWith('issue-') && f.endsWith('.md'));
+      tempFiles.forEach(f => {
+        try {
+          fs.unlinkSync(path.join(process.cwd(), f));
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      });
     }
   }
 
   formatIssueBody(errorReport) {
+    const { error, context, environment, timestamp } = errorReport;
+    
+    // Format the error details properly
+    const errorName = error.name || 'UnknownError';
+    const errorMessage = error.message || 'No error message provided';
+    const errorStack = error.stack || 'No stack trace available';
+    const errorSource = error.source || 'unknown';
+    
+    // Extract key context details
+    const nodeVersion = context.nodeVersion || 'Unknown';
+    const platform = context.platform || 'Unknown';
+    const workingDir = context.workingDirectory || 'Unknown';
+    const memoryUsage = context.memoryUsage ? JSON.stringify(context.memoryUsage, null, 2) : 'Not available';
+    const uptime = context.uptime || 0;
+    
+    // Clean up context for display (remove duplicates)
+    const cleanContext = { ...context };
+    delete cleanContext.nodeVersion;
+    delete cleanContext.platform;
+    delete cleanContext.workingDirectory;
+    delete cleanContext.memoryUsage;
+    delete cleanContext.uptime;
+    
     return `## 🐛 Automatic Error Report
 
-**Timestamp:** ${errorReport.timestamp}
-**Source:** ${errorReport.error.source}
+**Timestamp:** ${timestamp}  
+**Source:** ${errorSource}  
+**Error Type:** ${errorName}  
 
 ### Error Details
+
+**Message:**
 \`\`\`
-${errorReport.error.name}: ${errorReport.error.message}
+${errorMessage}
 \`\`\`
 
 ### Stack Trace
-\`\`\`
-${errorReport.error.stack}
+\`\`\`javascript
+${errorStack}
 \`\`\`
 
 ### Environment Information
-- **Node Version:** ${errorReport.context.nodeVersion}
-- **Platform:** ${errorReport.context.platform}
-- **Working Directory:** ${errorReport.context.workingDirectory}
-- **Memory Usage:** ${JSON.stringify(errorReport.context.memoryUsage, null, 2)}
-- **Uptime:** ${errorReport.context.uptime}s
+
+| Property | Value |
+|----------|-------|
+| **Node Version** | ${nodeVersion} |
+| **Platform** | ${platform} |
+| **Working Directory** | \`${workingDir}\` |
+| **Process Uptime** | ${uptime.toFixed(2)}s |
+
+**Memory Usage:**
+\`\`\`json
+${memoryUsage}
+\`\`\`
 
 ### Application Context
+
 \`\`\`json
-${JSON.stringify(errorReport.context, null, 2)}
+${JSON.stringify(cleanContext, null, 2)}
 \`\`\`
 
 ### Environment Variables
+
+<details>
+<summary>Click to expand environment variables</summary>
+
 \`\`\`json
-${JSON.stringify(errorReport.environment, null, 2)}
+${JSON.stringify(environment, null, 2)}
 \`\`\`
+
+</details>
 
 ---
 
-## 🤖 Instructions for Copilot
+## 🤖 Instructions for @copilot
 
 Please help resolve this automatically generated error report by following these steps:
 

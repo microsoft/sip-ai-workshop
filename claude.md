@@ -1,5 +1,7 @@
 # AI-SIP Workshop Repository
 
+⚠️ **FIRST ACTION**: Check and update `.github/Memory.md` NOW! ⚠️
+
 ## Overview
 
 This repository contains a sample JavaScript application used in the AI-SIP (AI-enhanced Software development In Practice) workshop. The application visualizes file system structures as an interactive graph using D3.js, providing a hands-on environment for demonstrating AI-assisted development workflows, debugging practices, and automated issue management.
@@ -12,8 +14,12 @@ The workshop focuses on:
 
 ## Required Context
 
-**IMPORTANT**: Always read the following file for current context:
-- `.github/Memory.md` - Contains current goals, todo list, status, and important context
+**CRITICAL - MUST DO AT START OF EVERY SESSION**: 
+1. **READ** `.github/Memory.md` for current context
+2. **UPDATE** `.github/Memory.md` after completing any significant task
+3. **COMMIT** Memory.md changes regularly to preserve context
+
+**Memory.md is your persistent brain across sessions - USE IT!**
 
 ## How to Run the Application
 
@@ -169,11 +175,15 @@ Last Updated: [ISO 8601 timestamp]
 ```
 
 ### When to Update Memory
-- After completing each major task
-- When switching between different features
-- Before and after creating pull requests
-- When encountering significant issues or decisions
-- At the start of each new session
+**MANDATORY UPDATE TRIGGERS:**
+- ✅ After completing ANY task from todo list
+- ✅ When creating or merging a PR
+- ✅ When discovering important technical details
+- ✅ After fixing any bugs
+- ✅ Every 30 minutes during long sessions
+- ✅ BEFORE ending any conversation
+
+**Set a mental reminder: "Did I update Memory.md in the last 30 minutes?"**
 
 ### Memory Pruning
 Keep the memory file concise by:

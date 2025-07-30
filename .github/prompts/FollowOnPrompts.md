@@ -134,7 +134,7 @@ To implement this feature, follow these steps:
 ## Feature: Capture Screenshot and Annotate
 The goal is to add a feature that allows users to press a key to capture a screenshot of the current visualization, annotate it, and create a new issue in the repository with the screenshot and annotations. This will help in reporting bugs or suggesting enhancements visually.  When running the application, the user should be able to press the "s" key to capture a screenshot and annotate it. When the screenshot is captured, show it in a modal dialog and allow the user to add annotations. Use a text box for the user to enter their annotations. Then update the screenshot with red overlay text with the annotations. The code should then create a new issue in the repository with the screenshot and annotations, and assign it to Copilot.
 1. Create a new issue in the repository titled "Capture Screenshot and Annotate". Update the Issue with the details of the feature.
-2. Create a new branch called `feature-<issue-number>capture-screenshot` and switch to it.
+2. Create a new branch based on the previous stacktrace branch called `feature-<issue-number>capture-screenshot` and switch to it.
 3. Think carefully about how to implement this feature. The code you create will need to:
    - Capture a screenshot of the current visualization when the user presses a specific key (e.g, "s").
    - Display the screenshot in a modal dialog.

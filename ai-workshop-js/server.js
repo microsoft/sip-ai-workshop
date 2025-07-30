@@ -1,6 +1,13 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const ErrorHandler = require('./error-handler');
+
+// Initialize error handling
+const errorHandler = new ErrorHandler({
+  enabled: process.env.NODE_ENV !== 'test', // Disable in test environment
+  rateLimitMinutes: 5
+});
 
 const app = express();
 const PORT = 3000;
@@ -22,9 +29,16 @@ const IMPORT_PATTERNS = [
   /export\s+(?:{[^}]+}|\*)\s+from\s+['"]([^'"]+)['"]/g
 ];
 
-function scanDirectory(dirPath, baseDir) {
+const scanDirectory = errorHandler.wrapFunction(function(dirPath, baseDir) {
   console.log(`[AI Observation] Scanning directory: ${dirPath}`);
   const files = [];
+  
+  // Update error handler context
+  errorHandler.updateContext({ 
+    currentOperation: 'scanDirectory',
+    dirPath,
+    baseDir 
+  });
   
   try {
     const items = fs.readdirSync(dirPath);
@@ -47,10 +61,11 @@ function scanDirectory(dirPath, baseDir) {
     }
   } catch (error) {
     console.error(`Error scanning directory ${dirPath}:`, error.message);
+    throw error; // Let error handler catch this
   }
   
   return files;
-}
+}, 'scanDirectory');
 
 function extractImports(filePath, baseDir) {
   console.log(`[AI Observation] Extracting imports from: ${filePath}`);
@@ -160,9 +175,17 @@ function buildDependencyGraph(targetPath) {
 }
 
 // API endpoint for dependency analysis
-app.post('/api/analyze', (req, res) => {
+app.post('/api/analyze', errorHandler.wrapFunction((req, res) => {
   console.log('[AI Observation] Received analysis request');
   const { path: targetPath } = req.body;
+  
+  // Update error handler context with request info
+  errorHandler.updateContext({
+    currentOperation: 'analyze',
+    requestPath: targetPath,
+    userAgent: req.get('User-Agent'),
+    ip: req.ip
+  });
   
   if (!targetPath) {
     return res.status(400).json({ error: 'Path is required' });
@@ -174,12 +197,45 @@ app.post('/api/analyze', (req, res) => {
   } catch (error) {
     console.error('Analysis error:', error);
     res.status(500).json({ error: error.message });
+    throw error; // Let error handler catch this
   }
-});
+}, 'apiAnalyze'));
+
+// API endpoint for client-side error reporting
+app.post('/api/report-error', errorHandler.wrapFunction((req, res) => {
+  console.log('[AI Observation] Received client error report');
+  const errorInfo = req.body;
+  
+  // Update error handler context
+  errorHandler.updateContext({
+    currentOperation: 'clientErrorReport',
+    clientErrorType: errorInfo.type,
+    clientUrl: errorInfo.url
+  });
+  
+  // Create a synthetic error object from client data
+  const clientError = new Error(`Client Error: ${errorInfo.message}`);
+  clientError.stack = errorInfo.stack || `Client Error at ${errorInfo.url}`;
+  clientError.clientContext = errorInfo;
+  
+  // Handle the client error through our error handler
+  errorHandler.handleError(clientError, 'client', { 
+    clientErrorInfo: errorInfo,
+    pageContext: errorInfo.pageContext 
+  });
+  
+  res.json({ status: 'received', timestamp: new Date().toISOString() });
+}, 'clientErrorReport'));
 
 // AI Enhancement Hook: Add more API endpoints here
 
 app.listen(PORT, () => {
   console.log(`[AI Observation] Server running at http://localhost:${PORT}`);
   console.log('Ready for dependency visualization!');
+  console.log('[ErrorHandler] Automatic error capture and issue creation enabled');
 });
+
+// Cleanup error handler periodically
+setInterval(() => {
+  errorHandler.cleanup();
+}, 60000); // Every minute

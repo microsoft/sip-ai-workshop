@@ -146,7 +146,7 @@ class ErrorHandler {
       console.log(`[ErrorHandler] Created issue: ${issueUrl}`);
       
       // Extract issue number from URL
-      const issueMatch = issueUrl.match(/\\/issues\\/(\d+)$/);
+      const issueMatch = issueUrl.match(/\/issues\/(\d+)$/);
       if (issueMatch) {
         const issueNumber = issueMatch[1];
         

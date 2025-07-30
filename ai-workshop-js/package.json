@@ -21,7 +21,8 @@
   "author": "AI Workshop",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "multer": "^2.0.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.1",
